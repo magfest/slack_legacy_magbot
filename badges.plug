@@ -1,0 +1,9 @@
+[Core]
+Name = Badges
+Module = badges
+    
+[Documentation]
+Description = Display badge sales for all current Mag events
+
+[Python]
+Version = 3
