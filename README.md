@@ -14,7 +14,7 @@ This is the collection of custom [Errbot](http://errbot.io) plugins that MAGFest
 * On the "Bots" page, click the "Add Configuration" button
 ![](docs/images/bots_page.png)
 * Give your bot a recognizable username, like "magbot-yourusername"
-* Make a note of your bot's username and API token
+* Make a note of your bot's **username** and **API token**
 ![](docs/images/api_token_page.png)
 
 #### Local Dev Environment
