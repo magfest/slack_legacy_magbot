@@ -1,9 +1,9 @@
 [Core]
 Name = Badges
 Module = badges
-    
+
 [Documentation]
-Description = Display badge sales for all current Mag events
+Description = Badge statistics for all current MAGFest events.
 
 [Python]
 Version = 3
