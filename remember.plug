@@ -1,0 +1,9 @@
+[Core]
+Name = Remember
+Module = remember
+
+[Documentation]
+Description = Remembers a key and value
+
+[Python]
+Version = 3

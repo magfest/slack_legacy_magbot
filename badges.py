@@ -29,14 +29,12 @@ def _normalize_url(url):
 
 
 def _format_events(responses):
-    message = ['|Event|Price|Sold|Remaining|', '|:---|---:|---:|---:|']
-    for name in sorted(responses.keys(), key=lambda s: s.lower()):
-        response = responses[name]
-        message.append('|{name}|${price}|{sold}|{remaining}|'.format(
-            name=name,
-            price=response['badges_price'],
-            sold=response['badges_sold'],
-            remaining=response['remaining_badges']))
+    message = []
+    for name, response in sorted(responses.items(), key=lambda x: x[0].lower()):
+        message.append('{} badges sold/remaining: {} / {}'.format(
+            name,
+            response['badges_sold'],
+            response['remaining_badges']))
     return '\n'.join(message)
 
 
@@ -46,10 +44,10 @@ class Badges(BotPlugin):
         """Display badge counts for current MAGFest events."""
         if len(self) > 0:
             return _format_events({s: requests.get(self[s]).json() for s in self})
-        return 'No events currently in list. You can add an event with the following command:\n' \
-            '`{}badges event add [<name>] <url>`'.format(self._bot.prefix)
+        return 'No events currently in list.\n ' \
+            'You can add an event by typing: `{}badges event add [<name>] <url>`'.format(self._bot.prefix)
 
-    @botcmd(split_args_with=None)
+    @botcmd(split_args_with=None, admin_only=True)
     def badges_event_add(self, mess, args):
         """Add an event to the list of events checked for badge counts."""
         if len(args) < 1:
@@ -76,7 +74,7 @@ class Badges(BotPlugin):
         self[name] = url
         return 'Event "{}" added to list:\n\n{}'.format(name, _format_events({name: response}))
 
-    @botcmd(split_args_with=None)
+    @botcmd(split_args_with=None, admin_only=True)
     def badges_event_remove(self, mess, args):
         """Remove an event from the list of events checked for badge counts."""
         if len(args) < 1:
@@ -86,19 +84,14 @@ class Badges(BotPlugin):
             del self[name]
             return 'Event "{}" removed from list.'.format(name)
         except KeyError:
-            return 'The event "{}" is not in the list. ' \
-                'You can view the event list with the following command:\n' \
-                '`{}badges event list`'.format(name, self._bot.prefix)
+            return 'The event "{}" is not in the list.\n ' \
+                'You can view the event list by typing: `{}badges event list`'.format(name, self._bot.prefix)
 
-    @botcmd
+    @botcmd(admin_only=True)
     def badges_event_list(self, mess, args):
         """List all events to check badges along with the URL for each."""
         if len(self) > 0:
-            return '|Name|URL|\n|:---|:---|\n' + '\n'.join(
-                ['|{name}|{url}|'.format(
-                    name=name,
-                    url=self[name]
-                ) for name in self])
+            return '\n'.join(['{}: {}'.format(name, self[name]) for name in self])
 
-        return 'No events currently in list. You can add an event with the following command:\n' \
-            '`{}badges event add [<name>] <url>`'.format(self._bot.prefix)
+        return 'No events currently in list.\n ' \
+            'You can add an event by typing: `{}badges event add [<name>] <url>`'.format(self._bot.prefix)
