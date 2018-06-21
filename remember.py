@@ -47,7 +47,7 @@ class Remember(BotPlugin):
         try:
             return self._get_memory(key)
         except KeyError:
-            return "I don't remember anything matching `{0}`.\n " \
+            return "I don't remember anything matching `{0}`\n " \
                 "You can see what I remember by typing: `{1}what do you remember`\n " \
                 "You can add a new memory by typing: `{1}remember {0} is <something>`".format(key, self._bot.prefix)
 
@@ -60,7 +60,7 @@ class Remember(BotPlugin):
             self._set_memory(key)
             return "I've forgotten {} is {}".format(key, value)
         except KeyError:
-            return "I don't remember anything matching `{0}`.\n " \
+            return "I don't remember anything matching `{0}`\n " \
                 "You can see what I remember by typing: `{1}what do you remember`".format(key, self._bot.prefix)
 
     @re_botcmd(
@@ -71,6 +71,6 @@ class Remember(BotPlugin):
         """Display a list of all memories"""
         memories = self.get('memories', {})
         if not memories:
-            return "I don't remember anything.\n " \
+            return "I don't remember anything\n " \
                 "You can add a new memory by typing: `{0}remember <name> is <something>`".format(self._bot.prefix)
         return '\n'.join(['I remember:'] + [s for s in sorted(memories.keys())])
