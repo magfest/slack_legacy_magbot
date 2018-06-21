@@ -9,18 +9,16 @@ _REMEMBER_SPLIT_RE = re.compile(r'\s+is[\s\n]+', flags=re.IGNORECASE)
 class Remember(BotPlugin):
 
     def _get_memory(self, key, escape=True):
-        value = self.get('memories', {})[key.lower()]
+        value = self[key.lower()]
         if escape:
             value = value.replace('`', '\`')
         return value
 
     def _set_memory(self, key, value=None):
-        memories = self.get('memories', {})
         if value is None:
-            del memories[key.lower()]
+            del self[key.lower()]
         else:
-            memories[key.lower()] = value
-        self['memories'] = memories
+            self[key.lower()] = value
 
     @re_botcmd(
         re_cmd_name_help='remember',
@@ -72,8 +70,8 @@ class Remember(BotPlugin):
         flags=re.IGNORECASE)
     def what_do_you_remember(self, msg, args):
         """Display a list of all memories"""
-        memories = self.get('memories', {})
+        memories = self.keys()
         if not memories:
             return "I don't remember anything\n " \
                 "You can add a new memory by typing: `{0}remember <name> is <something>`".format(self._bot.prefix)
-        return '\n'.join(['I remember:'] + [s for s in sorted(memories.keys())])
+        return '\n'.join(['I remember:'] + [s for s in sorted(memories)])
