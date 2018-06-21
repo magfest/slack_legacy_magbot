@@ -47,7 +47,7 @@ class Badges(BotPlugin):
         return 'No events currently in list.\n ' \
             'You can add an event by typing: `{}badges event add [<name>] <url>`'.format(self._bot.prefix)
 
-    @botcmd(split_args_with=None, admin_only=True)
+    @botcmd(split_args_with=None)
     def badges_event_add(self, mess, args):
         """Add an event to the list of events checked for badge counts."""
         if len(args) < 1:
@@ -74,7 +74,7 @@ class Badges(BotPlugin):
         self[name] = url
         return 'Event "{}" added to list:\n\n{}'.format(name, _format_events({name: response}))
 
-    @botcmd(split_args_with=None, admin_only=True)
+    @botcmd(split_args_with=None)
     def badges_event_remove(self, mess, args):
         """Remove an event from the list of events checked for badge counts."""
         if len(args) < 1:
@@ -87,7 +87,7 @@ class Badges(BotPlugin):
             return 'The event "{}" is not in the list.\n ' \
                 'You can view the event list by typing: `{}badges event list`'.format(name, self._bot.prefix)
 
-    @botcmd(admin_only=True)
+    @botcmd
     def badges_event_list(self, mess, args):
         """List all events to check badges along with the URL for each."""
         if len(self) > 0:
