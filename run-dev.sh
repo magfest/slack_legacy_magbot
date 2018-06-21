@@ -21,4 +21,4 @@ docker run -it --rm \
     --mount type=bind,source=$PWD/config-dev.py,target=/srv/config.py \
     -e BOT_USERNAME=$BOT_USERNAME \
     -e BOT_TOKEN=$BOT_TOKEN \
-    rroemhild/errbot:latest
+    magfest/docker-errbot:latest

@@ -22,7 +22,10 @@ class Remember(BotPlugin):
             memories[key.lower()] = value
         self['memories'] = memories
 
-    @re_botcmd(name='remember', pattern=r'^\s*(?:what is|rem(?:ember)?)(\s+.*|\s*)$', flags=re.IGNORECASE|re.DOTALL)
+    @re_botcmd(
+        re_cmd_name_help='remember',
+        pattern=r'^\s*(?:what is|rem(?:ember)?)(\s+.*|\s*)$',
+        flags=re.IGNORECASE|re.DOTALL)
     def remember(self, msg, match):
         """Remember something"""
         args = _REMEMBER_SPLIT_RE.split(match.group(1).strip())
@@ -64,7 +67,7 @@ class Remember(BotPlugin):
                 "You can see what I remember by typing: `{1}what do you remember`".format(key, self._bot.prefix)
 
     @re_botcmd(
-        name='memories',
+        re_cmd_name_help='what do you remember',
         pattern=r'^\s*(what(\s|_)+do(\s|_)+you(\s|_)+remember|memories)\s*$',
         flags=re.IGNORECASE)
     def what_do_you_remember(self, msg, args):
