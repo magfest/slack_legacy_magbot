@@ -28,4 +28,4 @@ git clone https://github.com/magfest/magbot.git && cd magbot
 #### Developing
 * You can now interact with your local magbot on the [test Slack workspace](https://magfest-test.slack.com)
 * In a DM with your magbot, type `!help` to get a list of commands
-* As you make changes in the local copy of your plugin, you can type `!plugins reload MyPluginName` to make your changes live
+* As you make changes in the local copy of your plugin, you can type `!plugin reload MyPluginName` to make your changes live
