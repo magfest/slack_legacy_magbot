@@ -39,6 +39,11 @@ def _format_events(responses):
 
 
 class Badges(BotPlugin):
+
+    def _sync(self):
+        if getattr(getattr(self, '_store'), 'shelf'):
+            self._store.shelf.sync()
+
     @botcmd
     def badges(self, mess, args):
         """Display badge counts for current MAGFest events."""
@@ -73,6 +78,7 @@ class Badges(BotPlugin):
             return '\n'.join(message)
 
         self[name] = url
+        self._sync()
         return 'Event "{}" added to list:\n\n{}'.format(name, _format_events({name: response}))
 
     @botcmd
@@ -83,6 +89,7 @@ class Badges(BotPlugin):
             return 'Usage: `{}badges event remove <name>`'.format(self._bot.prefix)
         try:
             del self[name]
+            self._sync()
             return 'Event "{}" removed from list.'.format(name)
         except KeyError:
             return 'The event "{}" is not in the list.\n ' \

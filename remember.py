@@ -8,6 +8,10 @@ _REMEMBER_SPLIT_RE = re.compile(r'\s+is[\s\n]+', flags=re.IGNORECASE)
 
 class Remember(BotPlugin):
 
+    def _sync(self):
+        if getattr(getattr(self, '_store'), 'shelf'):
+            self._store.shelf.sync()
+
     def _get_memory(self, key, escape=True):
         value = self.get('memories', {})[key.lower()]
         if escape:
@@ -21,6 +25,7 @@ class Remember(BotPlugin):
         else:
             memories[key.lower()] = value
         self['memories'] = memories
+        self._sync()
 
     @re_botcmd(
         re_cmd_name_help='remember',
