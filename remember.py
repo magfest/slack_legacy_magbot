@@ -41,7 +41,8 @@ class Remember(BotPlugin):
         elif value:
             try:
                 current_value = self._get_memory(key)
-                return "But `{0}` is already {1}\nYou must `forget {0}` first.".format(key, current_value)
+                return "But `{0}` is already {1}\nYou must `{2}forget {0}` first.".format(
+                    key, current_value, self._bot.prefix)
             except KeyError:
                 self._set_memory(key, value)
                 return "OK, I'll remember {}.".format(key)
