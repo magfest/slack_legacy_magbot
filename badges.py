@@ -47,9 +47,10 @@ class Badges(BotPlugin):
         return 'No events currently in list.\n ' \
             'You can add an event by typing: `{}badges event add [<name>] <url>`'.format(self._bot.prefix)
 
-    @botcmd(split_args_with=None)
+    @botcmd
     def badges_event_add(self, mess, args):
         """Add an event to the list of events checked for badge counts."""
+        args = args.rsplit(maxsplit=1)
         if len(args) < 1:
             return 'Usage: `{}badges event add [<name>] <url>`'.format(self._bot.prefix)
         elif len(args) == 1:
@@ -74,12 +75,12 @@ class Badges(BotPlugin):
         self[name] = url
         return 'Event "{}" added to list:\n\n{}'.format(name, _format_events({name: response}))
 
-    @botcmd(split_args_with=None)
-    def badges_event_remove(self, mess, args):
+    @botcmd
+    def badges_event_remove(self, mess, name=''):
         """Remove an event from the list of events checked for badge counts."""
-        if len(args) < 1:
+        name = name.strip()
+        if not name:
             return 'Usage: `{}badges event remove <name>`'.format(self._bot.prefix)
-        name = args[0]
         try:
             del self[name]
             return 'Event "{}" removed from list.'.format(name)
