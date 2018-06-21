@@ -31,7 +31,6 @@ BOT_IDENTITY = {
 CORE_PLUGINS = (
     'ACLs',
     'Backup',
-    'CommandNotFoundFilter',
     'Health',
     'Help',
     'Plugins',
