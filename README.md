@@ -28,6 +28,20 @@ git clone https://github.com/magfest/magbot.git && cd magbot
 ./run-dev.sh magbot-username xoxb-XXXXXXXXXXXX
 ```
 
+#### Local Dev Environment (Docker Compose)
+* Install [docker](https://www.docker.com)
+* Clone the magbot repository:
+```
+git clone https://github.com/magfest/magbot.git && cd magbot
+```
+* Copy the `env.sample` file to `.env`
+* Edit `.env` and add your bot's username and API token.
+* !!! VERY IMPORTANT !!! Do _NOT_ put your login info into `env.sample`.
+* Run magbot with
+```
+docker-compose up
+```
+
 #### Developing
 * You can now interact with your local magbot on the [test Slack workspace](https://magfest-test.slack.com)
 * In a DM with your magbot, type `!help` to get a list of commands

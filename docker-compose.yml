@@ -1,0 +1,12 @@
+version: '3.2'
+services:
+  magbot:
+    image: magfest/docker-errbot:latest
+    volumes:
+    - type: bind
+      source: ./config-dev.py
+      target: /srv/config.py
+    - type: bind
+      source: .
+      target: /srv/plugins/magbot
+    env_file: .env
