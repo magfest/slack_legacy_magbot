@@ -27,16 +27,19 @@ def _normalize_url(url):
 
     return (subdomain, '{}://{}/{}'.format(scheme, domain, path))
 
+def _draw_bar(sold,left,bar_len):
+    total = sold + left
+    filled_len = int(round(bar_len * sold / float(total)))
+    bar = ':zeldaheart:' * filled_len + ':zeldaheart-empty:' * (bar_len - filled_len)
+    return bar
 
-def _format_events(responses):
-    message = []
-    for name, response in sorted(responses.items(), key=lambda x: x[0].lower()):
-        message.append('{} badges sold/remaining: {} / {}'.format(
-            name,
-            response['badges_sold'],
-            response['remaining_badges']))
-    return '\n'.join(message)
-
+def _get_event_color(sold_pct):
+    if sold_pct < 50:
+        return 'green'
+    elif sold_pct < 80:
+        return 'yellow'
+    else:
+        return 'red'
 
 class Badges(BotPlugin):
 
@@ -44,7 +47,22 @@ class Badges(BotPlugin):
     def badges(self, mess, args):
         """Display badge counts for current MAGFest events."""
         if len(self) > 0:
-            return _format_events({s: requests.get(self[s]).json() for s in self})
+            responses = {s: requests.get(self[s]).json() for s in self}
+            for name, response in sorted(responses.items(), key=lambda x: x[0].lower()):
+                sold   = response['badges_sold']
+                left = response['remaining_badges']
+                total  = sold + left
+                bar_len = 10
+                per_bar = round(total/bar_len)
+                sold_pct = int((sold / total)*100)
+                left_pct = int((left / total)*100)
+                #price = response['badges_price']
+                bar = _draw_bar(sold,left,bar_len)
+                self.send_card(title='{}'.format(name),
+                    body='{}\n{} sold, {} remaining'.format(bar,sold,left),
+                    in_reply_to=mess,
+                    color=_get_event_color(sold_pct))
+            return
         return 'No events currently in list.\n ' \
             'You can add an event by typing: `{}badges event add [<name>] <url>`'.format(self._bot.prefix)
 
@@ -74,7 +92,7 @@ class Badges(BotPlugin):
             return '\n'.join(message)
 
         self[name] = url
-        return 'Event "{}" added to list:\n\n{}'.format(name, _format_events({name: response}))
+        return 'Event "{}" added to list.'.format(name)
 
     @botcmd
     def badges_event_remove(self, mess, name=''):
