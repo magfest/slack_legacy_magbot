@@ -1,0 +1,9 @@
+[Core]
+Name = Archive
+Module = archive
+
+[Documentation]
+Description = Archive channels within slack
+
+[Python]
+Version = 3
