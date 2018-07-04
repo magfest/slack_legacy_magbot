@@ -2,40 +2,38 @@ from datetime import datetime, timedelta
 from errbot import BotPlugin, botcmd
 
 
-def get_timestamp_from_api(call):
-    # api_json = json.loads(call)
-    messages = call.get('messages')
-    if messages:
-        for message in messages:
-            return float(message.get('ts'))
+class Archive(BotPlugin):
 
+    def _get_timestamp_for_channel(self, channel_id):
+        # There's a bunch of errors you could check for in this function.
+        #   * Does the channel even exist?
+        #   * Does it have any messages?
+        #   * If it has no messages, should you return the creation date?
+        # But for your purposes right now, returning None for any error is probably fine.
 
-class Archives(BotPlugin):
+        messages = self._bot.sc.api_call('channels.history', channel=channel_id, count=1)
+        try:
+            return float(messages[0]['ts'])
+        except Exception:
+            return None
 
     @botcmd
-    def archive_sweep(self, mess, args):
-        """Perform an archive sweep of all channels on slack. Default is 90 days."""
-        pass
+    def archive_list(self, mess, args):
+        """List all channels whose most recent message is at least the given number of days old. Defaults to 90 days."""
         channels = self._bot.channels()
         message = []
         try:
-            days = int(args) if len(args) > 0 else 90
-        except TypeError:
-            days = 90
+            days = int(args) if int(args) > 1 else 90
+        except ValueError:
+            return 'Usage: `!archive sweep [DAYS]` where DAYS is a number like 30 or 365. Defaults to 90'
         archive_past_this_date = datetime.now() - timedelta(days=days)
         for channel in channels:
-            channel_id = channel['id']
-            channel_name = channel['name']
-            timestamp = get_timestamp_from_api(self._bot.sc.api_call('channels.history', channel=channel_id, count=1))
-            self[channel_id] = {
-                'ts': datetime.utcfromtimestamp(timestamp),
-                'name': channel_name
-            }
-        for key in self.keys():
-            if self[key]['ts'] < archive_past_this_date:
-                message.append('<#{key}|{name}> has not had activity in {days} days and should be archived.'.format(
-                    name=self[key]['name'], key=key, days=days))
+            timestamp = self._get_timestamp_for_channel(channel['id'])
+            channel_date = datetime.utcfromtimestamp(timestamp)
+            if channel_date < archive_past_this_date:
+                age = (archive_past_this_date - channel_date).days
+                message.append('<#{}|{}> has not had activity in {} days.'.format(channel['id'], channel['name'], age))
         if len(message) == 0:
-            message.append('No channels need to be archived.')
+            message.append('No channels that haven\'t been used in the last {} days.'.format(days))
 
-        return "\n".join(message)
+        return '\n'.join(message)
