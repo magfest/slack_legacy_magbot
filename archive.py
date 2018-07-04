@@ -5,14 +5,8 @@ from errbot import BotPlugin, botcmd
 class Archive(BotPlugin):
 
     def _get_timestamp_for_channel(self, channel_id):
-        # There's a bunch of errors you could check for in this function.
-        #   * Does the channel even exist?
-        #   * Does it have any messages?
-        #   * If it has no messages, should you return the creation date?
-        # But for your purposes right now, returning None for any error is probably fine.
-
-        messages = self._bot.sc.api_call('channels.history', channel=channel_id, count=1)
         try:
+            messages = self._bot.sc.api_call('channels.history', channel=channel_id, count=1)
             return float(messages[0]['ts'])
         except Exception:
             return None
@@ -25,14 +19,16 @@ class Archive(BotPlugin):
         try:
             days = int(args) if int(args) > 1 else 90
         except ValueError:
-            return 'Usage: `!archive sweep [DAYS]` where DAYS is a number like 30 or 365. Defaults to 90'
+            return 'Usage: `!archive list [DAYS]` where DAYS is a number like 30 or 365. Defaults to 90'
         archive_past_this_date = datetime.now() - timedelta(days=days)
         for channel in channels:
             timestamp = self._get_timestamp_for_channel(channel['id'])
-            channel_date = datetime.utcfromtimestamp(timestamp)
-            if channel_date < archive_past_this_date:
-                age = (archive_past_this_date - channel_date).days
-                message.append('<#{}|{}> has not had activity in {} days.'.format(channel['id'], channel['name'], age))
+            if timestamp:
+                channel_date = datetime.utcfromtimestamp(timestamp)
+                if channel_date < archive_past_this_date:
+                    age = (archive_past_this_date - channel_date).days
+                    message.append('<#{}|{}> has not had activity in {} days.'.format(channel['id'],
+                                                                                      channel['name'], age))
         if len(message) == 0:
             message.append('No channels that haven\'t been used in the last {} days.'.format(days))
 
