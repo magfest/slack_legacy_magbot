@@ -23,7 +23,7 @@ class Remember(BotPlugin):
     @re_botcmd(
         re_cmd_name_help='remember',
         pattern=r'^\s*(?:what is|rem(?:ember)?)(\s+.*|\s*)$',
-        flags=re.IGNORECASE|re.DOTALL)
+        flags=re.IGNORECASE | re.DOTALL)
     def remember(self, msg, match):
         """Remember something"""
         args = _REMEMBER_SPLIT_RE.split(match.group(1).strip())
