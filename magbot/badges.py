@@ -1,6 +1,3 @@
-import json
-import urllib
-
 import requests
 from errbot import BotPlugin, botcmd
 
@@ -27,11 +24,13 @@ def _normalize_url(url):
 
     return (subdomain, '{}://{}/{}'.format(scheme, domain, path))
 
-def _draw_bar(sold,left,bar_len):
+
+def _draw_bar(sold, left, bar_len):
     total = sold + left
     filled_len = int(round(bar_len * sold / float(total)))
     bar = ':zeldaheart:' * filled_len + ':zeldaheart-empty:' * (bar_len - filled_len)
     return bar
+
 
 def _get_event_color(sold_pct):
     if sold_pct < 50:
@@ -41,6 +40,7 @@ def _get_event_color(sold_pct):
     else:
         return 'red'
 
+
 class Badges(BotPlugin):
 
     @botcmd
@@ -49,17 +49,16 @@ class Badges(BotPlugin):
         if len(self) > 0:
             responses = {s: requests.get(self[s]).json() for s in self}
             for name, response in sorted(responses.items(), key=lambda x: x[0].lower()):
-                sold   = response['badges_sold']
+                sold = response['badges_sold']
                 left = response['remaining_badges']
-                total  = sold + left
+                total = sold + left
                 bar_len = 10
-                per_bar = round(total/bar_len)
                 sold_pct = int((sold / total)*100)
-                left_pct = int((left / total)*100)
-                #price = response['badges_price']
-                bar = _draw_bar(sold,left,bar_len)
-                self.send_card(title='{}'.format(name),
-                    body='{}\n{} sold, {} remaining'.format(bar,sold,left),
+                # price = response['badges_price']
+                bar = _draw_bar(sold, left, bar_len)
+                self.send_card(
+                    title='{}'.format(name),
+                    body='{}\n{} sold, {} remaining'.format(bar, sold, left),
                     in_reply_to=mess,
                     color=_get_event_color(sold_pct))
             return
@@ -81,7 +80,7 @@ class Badges(BotPlugin):
             _, url = _normalize_url(raw_url)
 
         try:
-            response = requests.get(url).json()
+            requests.get(url).json()
         except Exception as ex:
             message = ['Error contacting given url: {}'.format(raw_url)]
             if raw_url != url:

@@ -2,3 +2,6 @@ __pycache__
 .git
 .env
 .idea
+.coverage
+.pytest_cache/
+.tox/

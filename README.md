@@ -46,3 +46,10 @@ docker-compose up
 * You can now interact with your local magbot on the [test Slack workspace](https://magfest-test.slack.com)
 * In a DM with your magbot, type `!help` to get a list of commands
 * As you make changes in the local copy of your plugin, you can type `!plugin reload MyPluginName` to make your changes live
+
+#### Testing
+You can run the unit tests using `tox`.
+
+
+## Contributing
+If you'd like to contribute, please open a pull request! Any new features should include at least some basic unit tests that exercise the code. Pull requests without unit tests – or with failing unit tests – will not be reviewed or considered for acceptance.
