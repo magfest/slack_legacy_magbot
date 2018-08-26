@@ -25,7 +25,10 @@ def test_remember(testbot):
     testbot.assertCommand('!links remove http://example.com', "Okay, I've removed")
     testbot.assertCommand('!links', "I don't know any trigger phrases")
 
-    testbot.assertCommand('!links add simple phrase http://example.com', "Okay, I'll reply with that link")
-    testbot.assertCommand('!links add simple phrase http://asdf.com', "Okay, I'll reply with that link")
+    testbot.assertCommand(
+        '!links add simple phrase http://example.com http://asdf.com',
+        "Okay, I'll reply with that link")
+    testbot.assertCommand('!links', 'http://example.com')
+    testbot.assertCommand('!links', 'http://asdf.com')
     testbot.assertCommand('!links remove SIMPLE   PHRASE', "Okay, I've removed")
     testbot.assertCommand('!links', "I don't know any trigger phrases")

@@ -49,8 +49,8 @@ class LinkTrigger(object):
             return bool(self.trigger_regex.fullmatch(phrase))
         return bool(self.trigger_regex.search(phrase))
 
-    def add_link(self, link):
-        self.links.append(link.strip())
+    def add_links(self, links):
+        self.links.extend([link.strip() for link in listify(links) if link.strip()])
 
     def remove_link(self, link):
         removed = None
@@ -81,7 +81,7 @@ class Links(BotPlugin):
                 return (key, link_trigger)
         return (None, None)
 
-    def _add_link_trigger(self, trigger_pattern, link):
+    def _add_link_trigger(self, trigger_pattern, links):
         key, link_trigger = self._find_link_trigger(trigger_pattern, fullmatch=True)
         if not link_trigger:
             link_trigger = LinkTrigger(trigger_pattern)
@@ -89,7 +89,7 @@ class Links(BotPlugin):
         if not key:
             key = link_trigger.trigger_pattern
 
-        link_trigger.add_link(link)
+        link_trigger.add_links(links)
         self[key] = link_trigger
 
         return link_trigger
@@ -163,9 +163,12 @@ class Links(BotPlugin):
                 "You can add a new link by typing: `{1}links add <phrase or /regex/i> <URL>`" \
                 .format(args, self._bot.prefix)
         else:
-            trigger_pattern = match.group(1).strip()
-            link = match.group(2).strip()
-            link_trigger = self._add_link_trigger(trigger_pattern, link)
+            links = []
+            while match:
+                trigger_pattern = match.group(1).strip()
+                links.append(match.group(2).strip())
+                match = _RE_LINK_SPLIT.match(trigger_pattern)
+            link_trigger = self._add_link_trigger(trigger_pattern, links)
             return "Okay, I'll reply with that link whenever someone types `{}`".format(link_trigger.trigger_pattern)
 
     @botcmd
