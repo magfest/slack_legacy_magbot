@@ -32,9 +32,10 @@ class LinkTrigger(object):
         match = _RE_TRIGGER_REGEX.match(self.raw_trigger_pattern)
         if match:
             flag_chars = sorted(set(match.group(2).strip().lower()))
+            pattern = match.group(1).strip()
             self.regex_flags = reduce(lambda x, y: x | y, map(_RE_FLAGS.get, flag_chars)) if flag_chars else None
-            self.regex_pattern = match.group(1).strip().replace('\ ', '\s+').replace(' ', '\s+')
-            self.trigger_pattern = '/{}/{}'.format(self.regex_pattern, ''.join(flag_chars))
+            self.regex_pattern = pattern.replace('\ ', '\s+').replace(' ', '\s+')
+            self.trigger_pattern = '/{}/{}'.format(pattern, ''.join(flag_chars))
             self.is_regex = True
         else:
             self.trigger_pattern = self._normalize_phrase(trigger_pattern)
