@@ -32,18 +32,22 @@ class LinkTrigger(object):
         match = _RE_TRIGGER_REGEX.match(self.raw_trigger_pattern)
         if match:
             flag_chars = sorted(set(match.group(2).strip().lower()))
-            flags = reduce(lambda x, y: x | y, map(_RE_FLAGS.get, flag_chars)) if flag_chars else None
-            pattern = match.group(1).strip()
-            self.trigger_regex = re.compile(pattern.replace('\ ', '\s+').replace(' ', '\s+'), flags=flags)
-            self.trigger_pattern = '/{}/{}'.format(pattern, ''.join(flag_chars))
+            self.regex_flags = reduce(lambda x, y: x | y, map(_RE_FLAGS.get, flag_chars)) if flag_chars else None
+            self.regex_pattern = match.group(1).strip().replace('\ ', '\s+').replace(' ', '\s+')
+            self.trigger_pattern = '/{}/{}'.format(self.regex_pattern, ''.join(flag_chars))
             self.is_regex = True
         else:
             self.trigger_pattern = self._normalize_phrase(trigger_pattern)
-            self.trigger_regex = re.compile(re.escape(self.trigger_pattern).replace('\ ', '\s+'), flags=re.IGNORECASE)
+            self.regex_pattern = re.escape(self.trigger_pattern).replace('\ ', '\s+')
+            self.regex_flags = re.IGNORECASE
             self.is_regex = False
 
     def __repr__(self):
         return '{}({!r}, {!r})'.format(self.__class__.__name__, self.trigger_pattern, self.links)
+
+    @property
+    def trigger_regex(self):
+        return re.compile(self.regex_pattern, flags=self.regex_flags)
 
     def is_match(self, phrase, fullmatch=False):
         if fullmatch:
@@ -68,6 +72,12 @@ class LinkTrigger(object):
 
 
 class Links(BotPlugin):
+
+    @staticmethod
+    def _bullet_list(items):
+        if items:
+            return '\n'.join(['• {}'.format(s) for s in sorted(listify(items))])
+        return ''
 
     def _find_link_trigger(self, phrase, fullmatch=False):
         try:
@@ -99,7 +109,7 @@ class Links(BotPlugin):
         key, link_trigger = self._find_link_trigger(query, fullmatch=True)
         if link_trigger:
             del self[key]
-            return self._format(link_trigger.trigger_pattern, link_trigger.links)
+            return [link_trigger]
 
         removed = []
         link = query.strip()
@@ -110,16 +120,8 @@ class Links(BotPlugin):
                     self[key] = link_trigger
                 else:
                     del self[key]
-                removed.append(self._format(link_trigger.trigger_pattern, [removed_link]))
-        return '\n\n'.join(removed)
-
-    def _format(self, trigger_pattern, links):
-        parts = []
-        if trigger_pattern:
-            parts.append(trigger_pattern)
-        if links:
-            parts.extend(['• {}'.format(link) for link in sorted(links)])
-        return '\n'.join(parts)
+                removed.append(LinkTrigger(key, [removed_link]))
+        return removed
 
     def callback_message(self, msg):
         text = msg.body.strip()
@@ -155,14 +157,14 @@ class Links(BotPlugin):
     @botcmd
     def links(self, msg, args):
         """List all trigger phrases and URLs"""
-        link_triggers = self.keys()
-        if not link_triggers:
+        link_trigger_keys = self.keys()
+        if not link_trigger_keys:
             return "I don't know any trigger phrases\n " \
                 "You can add a new link by typing: `{0}links add <phrase or /regex/i> <URL>`".format(self._bot.prefix)
 
-        for key in sorted(link_triggers):
+        for key in sorted(link_trigger_keys):
             link_trigger = self[key]
-            self.send_card(title=key, body=self._format('', link_trigger.links), in_reply_to=msg, color='#e8e8e8')
+            self.send_card(title=key, body=self._bullet_list(link_trigger.links), in_reply_to=msg, color='#e8e8e8')
 
     @botcmd
     def links_add(self, msg, args):
@@ -186,7 +188,12 @@ class Links(BotPlugin):
         """Remove a trigger phrase or URL"""
         removed = self._remove_trigger_pattern_or_link(args)
         if removed:
-            return "Okay, I've removed:\n{}".format(removed)
+            for link_trigger in removed:
+                self.send_card(
+                    title='Removed: {}'.format(link_trigger.trigger_pattern),
+                    body=self._bullet_list(link_trigger.links),
+                    in_reply_to=msg,
+                    color='#e8e8e8')
         else:
             return "I can't find any trigger phrases or links matching `{0}`\n " \
                 "You can see what links I know about by typing: `{1}links`".format(args, self._bot.prefix)
