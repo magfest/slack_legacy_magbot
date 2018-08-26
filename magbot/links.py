@@ -5,6 +5,7 @@ from functools import reduce
 from pockets import listify
 
 from errbot import BotPlugin, botcmd
+from errbot.backends.slack import SlackRoom
 
 
 _RE_FLAGS = {
@@ -137,21 +138,30 @@ class Links(BotPlugin):
                 # This is a links command in a direct message, ignore it
                 return
 
+        channelid = msg.extras.get('slack_event', {}).get('channel')
+        if channelid:
+            target = SlackRoom(channelid=channelid, bot=self._bot)
+            in_reply_to = None
+        else:
+            target = msg.frm
+            in_reply_to = msg
+
         key, link_trigger = self._find_link_trigger(msg.body)
         if link_trigger:
             link = link_trigger.random_link()
             if link:
-                self.send(msg.frm, link)
+                self.send(target, link, in_reply_to=in_reply_to)
 
     @botcmd
     def links(self, msg, args):
         """List all trigger phrases and URLs"""
-        link_triggers = self.items()
+        link_triggers = self.keys()
         if not link_triggers:
             return "I don't know any trigger phrases\n " \
                 "You can add a new link by typing: `{0}links add <phrase or /regex/i> <URL>`".format(self._bot.prefix)
 
-        for key, link_trigger in link_triggers:
+        for key in sorted(link_triggers):
+            link_trigger = self[key]
             self.send_card(title=key, body=self._format('', link_trigger.links), in_reply_to=msg, color='#e8e8e8')
 
     @botcmd
