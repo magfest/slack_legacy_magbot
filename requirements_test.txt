@@ -1,4 +1,4 @@
--r requirements.txt
+-r magbot/requirements.txt
 errbot>=5.2.0
 pytest>=3.0.1
 coverage>=3.6

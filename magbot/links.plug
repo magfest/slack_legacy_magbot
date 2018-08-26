@@ -1,0 +1,9 @@
+[Core]
+Name = Links
+Module = links
+
+[Documentation]
+Description = Listen for a trigger phrase and reply with a URL
+
+[Python]
+Version = 3
