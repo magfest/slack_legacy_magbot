@@ -15,10 +15,19 @@ if [ -z "$BOT_USERNAME" ] || [ -z "$BOT_TOKEN" ]; then
     exit 1
 fi
 
+if [ -f config.py ]; then
+    CONFIG_FILE="config.py"
+else
+    CONFIG_FILE="config-example.py"
+fi
+
+mkdir -p srv
+
 docker run -it --rm \
     --name magbot \
-    -v $PWD:/srv/plugins/magbot \
-    --mount type=bind,source=$PWD/config-dev.py,target=/srv/config.py \
+    --mount type=bind,source=$PWD/magbot,target=/srv/plugins/magbot \
+    --mount type=bind,source=$PWD/$CONFIG_FILE,target=/srv/config.py \
+    --mount type=bind,source=$PWD/srv,target=/srv \
     -e BOT_USERNAME=$BOT_USERNAME \
     -e BOT_TOKEN=$BOT_TOKEN \
     magfest/docker-errbot:latest

@@ -4,9 +4,12 @@ services:
     image: magfest/docker-errbot:latest
     volumes:
     - type: bind
-      source: ./config-dev.py
+      source: ./config-example.py
       target: /srv/config.py
     - type: bind
       source: .
       target: /srv/plugins/magbot
+    - type: bind
+      source: ./srv
+      target: /srv
     env_file: .env

@@ -1,4 +1,7 @@
 __pycache__
+config.py
+srv/*
+
 .git
 .env
 .idea

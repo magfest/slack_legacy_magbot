@@ -1,0 +1,9 @@
+[Core]
+Name = MAGFest
+Module = magfest
+
+[Documentation]
+Description = MAGFest specific commands
+
+[Python]
+Version = 3

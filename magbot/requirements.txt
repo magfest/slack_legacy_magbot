@@ -1,2 +1,5 @@
+fabric
 pockets
+PyYAML
 requests
+salt-pepper
