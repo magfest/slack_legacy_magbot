@@ -1,12 +1,10 @@
 import inspect
-import os
-import re
 import yaml
 from datetime import datetime
 from functools import wraps
 
 import pepper
-from errbot import BotPlugin, botcmd, arg_botcmd
+from errbot import BotPlugin, botcmd
 from pepper.libpepper import PepperException
 
 
@@ -22,7 +20,7 @@ def _pre_salt_auth(self):
 
 
 def _failed_salt_auth(self, is_cached_auth, error):
-    if is_cached_auth and 'authentication denied' in str(e).lower():
+    if is_cached_auth and 'authentication denied' in str(error).lower():
         self.log.debug('Cached Salt API token failed, attempting to update')
         self.auth = {}
         self._salt_auth()
@@ -192,4 +190,3 @@ class MAGFest(BotPlugin):
                 '**For results**: \`{}job {}\`'.format(jid, '\n'.join(sorted(minions)), self._bot.prefix, jid)
         else:
             yield 'No job started, no servers found for {}'.format(' '.join(args))
-
