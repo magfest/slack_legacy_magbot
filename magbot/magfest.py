@@ -2,6 +2,7 @@ import inspect
 import yaml
 from datetime import datetime
 from functools import wraps
+from itertools import zip_longest
 
 import pepper
 from errbot import BotPlugin, botcmd
@@ -142,7 +143,7 @@ class MAGFest(BotPlugin):
 
     def _format_targets(self, args):
         targets = ['G@roles:reggie']
-        for grain, value in zip(['env', 'event_name', 'event_year'], args):
+        for grain, value in zip_longest(['env', 'event_name', 'event_year'], args):
             if value:
                 if ':' in value:
                     grain, _, value = value.partition(':')
