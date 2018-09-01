@@ -186,7 +186,6 @@ class MAGFest(BotPlugin):
         jid, minions = self._extract_jid_and_minions(results)
         if minions:
             yield '**Started job id**: {} \n ' \
-                '**Target servers**: \n {} \n ' \
-                '**For results**: \`{}job {}\`'.format(jid, '\n'.join(sorted(minions)), self._bot.prefix, jid)
+                '**Target servers**: \n {}'.format(jid, '\n'.join(sorted(minions)), self._bot.prefix)
         else:
             yield 'No job started, no servers found for {}'.format(' '.join(args))
