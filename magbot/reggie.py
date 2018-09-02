@@ -208,7 +208,7 @@ class Reggie(BotPlugin):
     @parse_grain_args
     @salt_auth
     def ip_addrs(self, msg, args, grains, regex_grains, targets):
-        """Lists ip addresses of target servers"""
+        """List ip addresses of target servers"""
         results = self.api.local(targets, 'network.ip_addrs', expr_form='compound')
         yield self._format_results(results)
 
@@ -223,7 +223,7 @@ class Reggie(BotPlugin):
     @botcmd
     @salt_auth
     def update_magbot(self, msg, args):
-        """Updates magbot"""
+        """Update magbot"""
         yield 'Updating magbot... (takes a few minutes)'
         self._update_infrastructure_repo()
         results = self.api.local_async('mcp', 'state.sls', 'docker_magbot')
@@ -232,7 +232,7 @@ class Reggie(BotPlugin):
     @botcmd
     @salt_auth
     def update_mcp(self, msg, args):
-        """Updates mcp"""
+        """Update mcp"""
         yield 'Updating mcp... (takes a few minutes)'
         self._update_infrastructure_repo()
         results = self.api.local_async('mcp', 'state.apply')
