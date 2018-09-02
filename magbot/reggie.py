@@ -194,8 +194,9 @@ class Reggie(BotPlugin):
         results = self.api.local_async(targets, 'state.apply', expr_form='compound')
         jid, minions = self._extract_jid_and_minions(results)
         if minions:
-            yield '**Started job id**: {} \n ' \
-                  '**Target servers**: \n {}'.format(jid, ' \n'.join(sorted(minions)))
+            minion_list = ('\n' + (' \n'.join(sorted(minions)))) if len(minions) > 1 else minions[0]
+            yield '**Started job**: {}/molten/job/{} \n ' \
+                  '**Target servers**: {}'.format(self.bot_config.SALT_API_URL, jid, minion_list)
         else:
             yield 'No job started, no servers found for {}'.format(' '.join(args))
 
