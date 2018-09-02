@@ -107,7 +107,7 @@ def parse_grain_args(func):
 
 class Reggie(BotPlugin):
 
-    DIVERT_TO_THREAD = ('ip_addrs', 'job', 'update_magbot', 'update_mcp')
+    DIVERT_TO_THREAD = ('ip_addrs',)
 
     def __init__(self, *args, **kwargs):
         self.api = None
@@ -173,6 +173,16 @@ class Reggie(BotPlugin):
             return (result.get('jid', None), result.get('minions', []))
         return (None, [])
 
+    def _format_async(self, args, results, list_minions=False):
+        jid, minions = self._extract_jid_and_minions(results)
+        if jid:
+            message = ['**Started job**: {}/molten/job/{}'.format(self.bot_config.SALT_API_URL, jid)]
+            if list_minions:
+                minion_list = ('\n' + (' \n'.join(sorted(minions)))) if len(minions) > 1 else minions[0]
+                message.append('**Target servers**: {}'.format(minion_list))
+            return ' \n '.join(message)
+        return 'No job started, no servers found for {}'.format(' '.join(args))
+
     def _format_results(self, results, compact=False):
         result = results.get('return', [])
         if len(result) == 1:
@@ -191,14 +201,8 @@ class Reggie(BotPlugin):
         """Deploy reggie to target servers"""
         yield 'Deploying latest to {}... (takes a few minutes)'.format(' '.join(args))
         self._update_infrastructure_repo()
-        results = self.api.local_async(targets, 'state.apply', expr_form='compound')
-        jid, minions = self._extract_jid_and_minions(results)
-        if minions:
-            minion_list = ('\n' + (' \n'.join(sorted(minions)))) if len(minions) > 1 else minions[0]
-            yield '**Started job**: {}/molten/job/{} \n ' \
-                  '**Target servers**: {}'.format(self.bot_config.SALT_API_URL, jid, minion_list)
-        else:
-            yield 'No job started, no servers found for {}'.format(' '.join(args))
+        results = self.api.local_async(targets, 'test.ping', expr_form='compound')
+        yield self._format_async(args, results, list_minions=True)
 
     @botcmd(split_args_with=None)
     @parse_grain_args
@@ -206,14 +210,6 @@ class Reggie(BotPlugin):
     def ip_addrs(self, msg, args, grains, regex_grains, targets):
         """Lists ip addresses of target servers"""
         results = self.api.local(targets, 'network.ip_addrs', expr_form='compound')
-        yield self._format_results(results)
-
-    @botcmd
-    @salt_auth
-    def job(self, msg, jid):
-        """Lookup results of a job"""
-        yield 'Looking up job {}... (takes a few minutes)'.format(jid)
-        results = self.api.runner('jobs.lookup_jid', jid=jid)
         yield self._format_results(results)
 
     @botcmd(split_args_with=None)
@@ -230,8 +226,8 @@ class Reggie(BotPlugin):
         """Updates magbot"""
         yield 'Updating magbot... (takes a few minutes)'
         self._update_infrastructure_repo()
-        results = self.api.local('mcp', 'state.sls', 'docker_magbot')
-        yield self._format_results(results)
+        results = self.api.local_async('mcp', 'state.sls', 'docker_magbot')
+        yield self._format_async(args, results)
 
     @botcmd
     @salt_auth
@@ -239,5 +235,5 @@ class Reggie(BotPlugin):
         """Updates mcp"""
         yield 'Updating mcp... (takes a few minutes)'
         self._update_infrastructure_repo()
-        results = self.api.local('mcp', 'state.apply')
-        yield self._format_results(results)
+        results = self.api.local_async('mcp', 'state.apply')
+        yield self._format_async(args, results)
