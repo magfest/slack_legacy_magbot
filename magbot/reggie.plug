@@ -1,0 +1,9 @@
+[Core]
+Name = Reggie
+Module = reggie
+
+[Documentation]
+Description = Reggie specific commands
+
+[Python]
+Version = 3
