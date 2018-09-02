@@ -178,8 +178,11 @@ class Reggie(BotPlugin):
         if jid:
             message = ['**Started job**: {}/molten/job/{}'.format(self.bot_config.SALT_API_URL, jid)]
             if list_minions:
-                minion_list = ('\n' + (' \n'.join(sorted(minions)))) if len(minions) > 1 else minions[0]
-                message.append('**Target servers**: {}'.format(minion_list))
+                if len(minions) == 1:
+                    message.append('**Target server**: {}'.format(minions[0]))
+                else:
+                    message.append('**Target servers**: \n {}'.format(' \n'.join(sorted(minions))))
+
             return ' \n '.join(message)
         return 'No job started, no servers found for {}'.format(' '.join(args))
 
@@ -201,7 +204,7 @@ class Reggie(BotPlugin):
         """Deploy reggie to target servers"""
         yield 'Deploying latest to {}... (takes a few minutes)'.format(' '.join(args))
         self._update_infrastructure_repo()
-        results = self.api.local_async(targets, 'test.ping', expr_form='compound')
+        results = self.api.local_async(targets, 'state.apply', expr_form='compound')
         yield self._format_async(args, results, list_minions=True)
 
     @botcmd(split_args_with=None)
