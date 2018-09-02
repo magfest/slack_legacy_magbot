@@ -107,7 +107,7 @@ def parse_grain_args(func):
 
 class Reggie(BotPlugin):
 
-    DIVERT_TO_THREAD = ()
+    DIVERT_TO_THREAD = ('ip_addrs', 'job', 'update_magbot', 'update_mcp')
 
     def __init__(self, *args, **kwargs):
         self.api = None
@@ -173,11 +173,31 @@ class Reggie(BotPlugin):
             return (result.get('jid', None), result.get('minions', []))
         return (None, [])
 
-    def _format_results(self, results):
+    def _format_results(self, results, compact=False):
         result = results.get('return', [])
         if len(result) == 1:
             result = result[0]
-        return yaml.dump(result, default_flow_style=False)
+        return yaml.dump(result, default_flow_style=compact)
+
+    def _update_infrastructure_repo(self):
+        with Connection(**self.fabric_connection_kwargs) as c:
+            self.log.debug(c.sudo('git -C /srv/infrastructure pull'))
+            self.log.debug(c.sudo('salt-run fileserver.update'))
+
+    @botcmd(split_args_with=None)
+    @parse_grain_args
+    @salt_auth
+    def deploy(self, msg, args, grains, regex_grains, targets):
+        """Deploy reggie to target servers"""
+        yield 'Deploying latest to {}... (takes a few minutes)'.format(' '.join(args))
+        self._update_infrastructure_repo()
+        results = self.api.local_async(targets, 'state.apply', expr_form='compound')
+        jid, minions = self._extract_jid_and_minions(results)
+        if minions:
+            yield '**Started job id**: {} \n ' \
+                  '**Target servers**: \n {}'.format(jid, ' \n'.join(sorted(minions)))
+        else:
+            yield 'No job started, no servers found for {}'.format(' '.join(args))
 
     @botcmd(split_args_with=None)
     @parse_grain_args
@@ -191,34 +211,32 @@ class Reggie(BotPlugin):
     @salt_auth
     def job(self, msg, jid):
         """Lookup results of a job"""
-        self.send(msg.frm, 'Looking up job {}... (takes a few minutes)'.format(jid), in_reply_to=msg)
+        yield 'Looking up job {}... (takes a few minutes)'.format(jid)
         results = self.api.runner('jobs.lookup_jid', jid=jid)
-        self.send(msg.frm, self._format_results(results), in_reply_to=msg)
-        yield None
-
-    @botcmd(split_args_with=None)
-    @parse_grain_args
-    @salt_auth
-    def ping(self, msg, args, grains, regex_grains, targets):
-        """Pings target servers"""
-        results = self.api.local(targets, 'test.ping', expr_form='compound')
         yield self._format_results(results)
 
     @botcmd(split_args_with=None)
     @parse_grain_args
     @salt_auth
-    def deploy(self, msg, args, grains, regex_grains, targets):
-        """Deploy reggie to target servers"""
-        yield 'Deploying latest to {}... (takes a few minutes)'.format(' '.join(args))
+    def ping(self, msg, args, grains, regex_grains, targets):
+        """Ping target servers"""
+        results = self.api.local(targets, 'test.ping', expr_form='compound')
+        yield self._format_results(results)
 
-        with Connection(**self.fabric_connection_kwargs) as c:
-            self.log.debug(c.sudo('git -C /srv/infrastructure pull'))
-            self.log.debug(c.sudo('salt-run fileserver.update'))
+    @botcmd
+    @salt_auth
+    def update_magbot(self, msg, args):
+        """Updates magbot"""
+        yield 'Updating magbot... (takes a few minutes)'
+        self._update_infrastructure_repo()
+        results = self.api.local('mcp', 'state.sls', 'docker_magbot')
+        yield self._format_results(results)
 
-        results = self.api.local_async(targets, 'test.ping', expr_form='compound')
-        jid, minions = self._extract_jid_and_minions(results)
-        if minions:
-            yield '**Started job id**: {} \n ' \
-                  '**Target servers**: \n {}'.format(jid, ' \n'.join(sorted(minions)))
-        else:
-            yield 'No job started, no servers found for {}'.format(' '.join(args))
+    @botcmd
+    @salt_auth
+    def update_mcp(self, msg, args):
+        """Updates mcp"""
+        yield 'Updating mcp... (takes a few minutes)'
+        self._update_infrastructure_repo()
+        results = self.api.local('mcp', 'state.apply')
+        yield self._format_results(results)
