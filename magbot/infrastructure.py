@@ -1,3 +1,7 @@
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+
 from collections import OrderedDict
 from functools import wraps
 
@@ -81,10 +85,8 @@ class Infrastructure(MagbotMixin, FabricMixin, SaltMixin, BotPlugin):
     def ip_addrs(self, msg, args, grains, regex_grains, targets):
         """List ip addresses of target reggie servers"""
         results = self.salt_api.local(targets, 'network.ip_addrs', expr_form='compound')
-        server_count = 0
         for servers in results.get('return', []):
             for server, ip_addrs in servers.items():
-                server_count += 1
                 ip_addrs[:] = [s for s in ip_addrs if not s.startswith('10.10.')]
         yield results
 
