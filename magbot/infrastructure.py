@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))  # noqa: E402
 
 from collections import OrderedDict
 from functools import wraps
@@ -73,7 +73,7 @@ class Infrastructure(MagbotMixin, FabricMixin, SaltMixin, BotPlugin):
 
     @botcmd(split_args_with=None)
     @parse_reggie_args
-    @SaltMixin.salt_async_cmd('Deploying latest reggie to {}... (takes a few minutes)')
+    @SaltMixin.salt_async_cmd('Deploying latest reggie to {args}... (takes a few minutes)')
     def deploy(self, msg, args, grains, regex_grains, targets):
         """Deploy reggie to target servers"""
         self._update_infrastructure_repo()
