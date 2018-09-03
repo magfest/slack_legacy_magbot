@@ -107,7 +107,7 @@ def parse_grain_args(func):
 
 class Reggie(BotPlugin):
 
-    DIVERT_TO_THREAD = ('ip_addrs',)
+    DIVERT_TO_THREAD = ()
 
     def __init__(self, *args, **kwargs):
         self.api = None
@@ -213,7 +213,17 @@ class Reggie(BotPlugin):
     def ip_addrs(self, msg, args, grains, regex_grains, targets):
         """List ip addresses of target servers"""
         results = self.api.local(targets, 'network.ip_addrs', expr_form='compound')
-        yield self._format_results(results)
+        server_count = 0
+        for servers in results.get('return', []):
+            for server, ip_addrs in servers.items():
+                server_count += 1
+                ip_addrs[:] = [s for s in ip_addrs if not s.startswith('10.10.')]
+
+        if server_count > 10:
+            self.send(msg.frm, self._format_results(results), in_reply_to=msg)
+            yield None
+        else:
+            yield self._format_results(results)
 
     @botcmd(split_args_with=None)
     @parse_grain_args
