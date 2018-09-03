@@ -1,0 +1,9 @@
+[Core]
+Name = Infrastructure
+Module = infrastructure
+
+[Documentation]
+Description = Infrastructure automation utilities.
+
+[Python]
+Version = 3
