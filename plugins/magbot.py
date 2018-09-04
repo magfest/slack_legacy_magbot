@@ -1,4 +1,5 @@
 import inspect
+from collections import OrderedDict
 from datetime import datetime
 from functools import wraps
 
@@ -118,40 +119,114 @@ class SaltMixin(PollerMixin):
     """
 
     @staticmethod
-    def salt_auth(func):
+    def _validate_grain_args(grains, grain_args):
+        for grain_arg in grain_args:
+            name = grain_arg['name']
+            value = grains.get(name)
+            if value:
+                if value in grain_arg.get('ignore', []):
+                    return True
+                choices = grain_arg.get('choices', [])
+                if choices and value not in choices:
+                    return 'unknown {}: \`{}\`, valid values: {}'.format(name, value, ', '.join(choices))
+                value_type = grain_arg.get('type', str)
+                try:
+                    value_type(value)
+                except Exception:
+                    return 'invalid {}: \`{}\`'.format(name, value)
+            elif grain_arg.get('required'):
+                return '{} is required'.format(name)
+        return None
+
+    @staticmethod
+    def parse_target_args(default_targets=None, grain_args=[]):
+        """
+        Decorator to parse salt targets from command args.
+        """
+        grain_args_usage = ' '.join(
+            [g['name'] if g.get('required') else '[{}]'.format(g['name']) for g in grain_args] + ['[roles:(web|db)]'])
+
+        def decorator(func):
+            @wraps(func)
+            def with_parse_target_args(self, msg, args):
+                args = args.split()
+                grain_names = [g['name'] for g in reversed(grain_args)]
+                grains = OrderedDict()
+                regex_grains = []
+                extra_targets = []
+                for arg in args:
+                    if '@' in arg:
+                        extra_targets.append(arg)
+                    elif ':' in arg:
+                        regex_grains.append(arg)
+                    elif grain_names:
+                        grains[grain_names.pop()] = arg
+                    else:
+                        extra_targets.append(arg)
+
+                error = SaltMixin._validate_grain_args(grains, grain_args)
+                if error is True:
+                    yield None  # We hit a value that should be ignored
+                elif error:
+                    yield 'Parse error: {} \n ' \
+                        'Usage: \`{}{} {}\`'.format(error, self._bot.prefix, func.__name__, grain_args_usage)
+                else:
+                    targets = [default_targets] if default_targets else []
+                    for grain, value in grains.items():
+                        targets.append('G@{}:{}'.format(grain, value))
+                    for regex_grain in regex_grains:
+                        targets.append('P@{}'.format(regex_grain))
+                    for extra_target in extra_targets:
+                        targets.append(extra_target)
+                    targets = ' and '.join(targets)
+
+                    yield from gen(func)(self, msg, args, targets)
+
+            return with_parse_target_args
+
+        if callable(default_targets):
+            func = default_targets
+            default_targets = None
+            return decorator(func)
+        else:
+            return decorator
+
+    @staticmethod
+    def api_auth(func):
         """
         Decorator to authenticate against the Salt API before calling the function.
         """
         @wraps(func)
-        def with_salt_auth(self, *args, **kwargs):
-            old_token = self._cached_salt_auth.get('token')
-            self._renew_salt_auth()
-            new_token = self._cached_salt_auth.get('token')
+        def with_api_auth(self, *args, **kwargs):
+            old_token = self._cached_api_auth.get('token')
+            self._renew_api_auth()
+            new_token = self._cached_api_auth.get('token')
             try:
                 yield from gen(func)(self, *args, **kwargs)
             except PepperException as error:
                 if old_token == new_token and 'authentication denied' in str(error).lower():
                     self.log.debug('Cached Salt API token failed, attempting to update')
-                    self._cached_salt_auth = {}
-                    self._renew_salt_auth()
+                    self._cached_api_auth = {}
+                    self._renew_api_auth()
                     yield from gen(func)(self, *args, **kwargs)
                 else:
                     raise error
 
-        return with_salt_auth
+        return with_api_auth
 
     @staticmethod
-    def salt_cmd(salutation=None):
+    def cmd(salutation=None, default_targets=None, grain_args=[]):
         """
         Decorator to format results from the Salt API.
         """
         def decorator(func):
             @wraps(func)
-            def with_salt_cmd(self, msg, args, **kwargs):
+            @SaltMixin.parse_target_args(default_targets, grain_args)
+            def with_salt_cmd(self, msg, args, targets):
                 if salutation:
                     yield salutation.format(args=' '.join(args))
 
-                for results in SaltMixin.salt_auth(func)(self, msg, args, **kwargs):
+                for results in SaltMixin.api_auth(func)(self, msg, args, targets):
                     yield self._format_results(results)
 
             return with_salt_cmd
@@ -164,17 +239,18 @@ class SaltMixin(PollerMixin):
             return decorator
 
     @staticmethod
-    def salt_async_cmd(salutation=None, interval=20, times=12):
+    def async_cmd(salutation=None, default_targets=None, grain_args=[], interval=20, times=12):
         """
         Decorator to poll for asynchronous results from the Salt API.
         """
         def decorator(func):
             @wraps(func)
-            def with_salt_async_cmd(self, msg, args, **kwargs):
+            @SaltMixin.parse_target_args(default_targets, grain_args)
+            def with_salt_async_cmd(self, msg, args, targets):
                 if salutation:
                     yield salutation.format(args=' '.join(args))
 
-                for async_results in SaltMixin.salt_auth(func)(self, msg, args, **kwargs):
+                for async_results in SaltMixin.api_auth(func)(self, msg, args, targets):
                     results = async_results['return'][0]
                     jid = results.get('jid', None)
                     minions = results.get('minions', [])
@@ -184,10 +260,10 @@ class SaltMixin(PollerMixin):
                         self._current_jobs[jid] = {'minion_results': {}}
                         self.start_poller(
                             interval,
-                            self.salt_async_poller,
+                            self.async_cmd_poller,
                             times=times,
                             args=[jid, minions, msg, args],
-                            kwargs=kwargs)
+                            kwargs={'targets': targets})
 
             return with_salt_async_cmd
 
@@ -200,7 +276,7 @@ class SaltMixin(PollerMixin):
 
     def __init__(self, *args, **kwargs):
         self.salt_api = None
-        self._cached_salt_auth = {}
+        self._cached_api_auth = {}
         self._current_jobs = {}
         super().__init__(*args, **kwargs)
 
@@ -231,11 +307,11 @@ class SaltMixin(PollerMixin):
             result = result[0]
         return yaml.dump(result, default_flow_style=False)
 
-    def _renew_salt_auth(self):
+    def _renew_api_auth(self):
         """
         The Salt API returns an auth dictionary that looks like this::
 
-            self._cached_salt_auth = {
+            self._cached_api_auth = {
                 'user': 'username',
                 'perms': [{'*': ['.*']}],
                 'eauth': 'ldap',
@@ -244,8 +320,8 @@ class SaltMixin(PollerMixin):
                 'token': 'XXXXXXXXXXXXX',
             }
         """
-        if self._cached_salt_auth.get('expire'):
-            expiration = datetime.fromtimestamp(self._cached_salt_auth['expire'])
+        if self._cached_api_auth.get('expire'):
+            expiration = datetime.fromtimestamp(self._cached_api_auth['expire'])
             seconds_to_expiration = (expiration - datetime.utcnow()).total_seconds()
             if seconds_to_expiration > 900:
                 # The auth token won't expire for at least 15 minutes
@@ -253,7 +329,7 @@ class SaltMixin(PollerMixin):
                 return
 
         try:
-            self._cached_salt_auth = self.salt_api.login(
+            self._cached_api_auth = self.salt_api.login(
                 self.bot_config.SALT_USERNAME, self.bot_config.SALT_PASSWORD, self.bot_config.SALT_AUTH)
             self.log.debug('Updated cached Salt API auth token')
         except Exception:
@@ -261,7 +337,7 @@ class SaltMixin(PollerMixin):
                 self.bot_config.SALT_USERNAME, self.bot_config.SALT_AUTH), exc_info=True)
             raise
 
-    def salt_async_poller(self, jid, minions, msg, args, **kwargs):
+    def async_cmd_poller(self, jid, minions, msg, args, **kwargs):
         """
         Called on an interval to check for results of an async salt command.
         """
@@ -281,7 +357,7 @@ class SaltMixin(PollerMixin):
         if missing_minions:
             self._current_jobs[jid] = job_info
         else:
-            self.stop_poller(self.salt_async_poller, args=[jid, minions, msg, args], kwargs=kwargs)
+            self.stop_poller(self.async_cmd_poller, args=[jid, minions, msg, args], kwargs=kwargs)
             del self._current_jobs[jid]
 
         if new_minion_results:
@@ -290,13 +366,14 @@ class SaltMixin(PollerMixin):
                 response = '**Results**:{} {}'.format('' if len(minions) == 1 else ' \n', response)
             self.send(self.message_identifier(msg), response)
 
-    def salt_async_poller_timeout(self, jid, minions, msg, args, **kwargs):
+    def async_cmd_poller_timeout(self, jid, minions, msg, args, **kwargs):
         """
-        Called if salt_async_poller() is repeatedly called and stop_poller() is never called.
+        Called after async_cmd_poller() is called repeatedly and stop_poller() is never called.
         """
-        job_info = self._current_jobs[jid]
-        del self._current_jobs[jid]
-        missing_minions = set(minions).difference(job_info['minion_results'].keys())
-        if missing_minions:
-            missing_minion_results = {minion: 'never responded' for minion in missing_minions}
+        if jid in self._current_jobs:
+            job_info = self._current_jobs[jid]
+            del self._current_jobs[jid]
+            missing_minions = set(minions).difference(job_info['minion_results'].keys())
+            if missing_minions:
+                missing_minion_results = {minion: 'never responded' for minion in missing_minions}
             self.send(self.message_identifier(msg), self._format_results(missing_minion_results))
