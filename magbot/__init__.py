@@ -249,17 +249,6 @@ class SaltMixin(PollerMixin):
                 self.bot_config.SALT_USERNAME, self.bot_config.SALT_AUTH), exc_info=True)
             raise
 
-    def salt_async_poller_timeout(self, jid, minions, msg, args, **kwargs):
-        """
-        Called if salt_async_poller() is repeatedly called and stop_poller() is never called.
-        """
-        job_info = self._current_jobs[jid]
-        del self._current_jobs[jid]
-        missing_minions = set(minions).difference(job_info['minion_results'].keys())
-        if missing_minions:
-            missing_minion_results = {minion: 'never responded' for minion in missing_minions}
-            self.send(self.message_identifier(msg), self._format_results(missing_minion_results))
-
     def salt_async_poller(self, jid, minions, msg, args, **kwargs):
         """
         Called on an interval to check for results of an async salt command.
@@ -288,3 +277,14 @@ class SaltMixin(PollerMixin):
             if is_first_response:
                 response = '**Results**:{} {}'.format('' if len(minions) == 1 else ' \n', response)
             self.send(self.message_identifier(msg), response)
+
+    def salt_async_poller_timeout(self, jid, minions, msg, args, **kwargs):
+        """
+        Called if salt_async_poller() is repeatedly called and stop_poller() is never called.
+        """
+        job_info = self._current_jobs[jid]
+        del self._current_jobs[jid]
+        missing_minions = set(minions).difference(job_info['minion_results'].keys())
+        if missing_minions:
+            missing_minion_results = {minion: 'never responded' for minion in missing_minions}
+            self.send(self.message_identifier(msg), self._format_results(missing_minion_results))
