@@ -1,4 +1,4 @@
-from errbot import BotPlugin, botcmd
+from errbot import BotPlugin
 from magbot import FabricMixin, MagbotMixin, SaltMixin
 
 
@@ -26,14 +26,12 @@ class Infrastructure(MagbotMixin, FabricMixin, SaltMixin, BotPlugin):
             c.sudo('git -C /srv/infrastructure pull')
             c.sudo('salt-run fileserver.update')
 
-    @botcmd
     @SaltMixin.async_cmd('Deploying latest reggie to {args}... (takes a few minutes)', **reggie_target_args)
     def deploy(self, msg, args, targets):
         """Deploy reggie to target servers"""
         self._update_infrastructure_repo()
         yield self.salt_api.local_async(targets, 'state.apply', expr_form='compound')
 
-    @botcmd
     @SaltMixin.cmd(**reggie_target_args)
     def ip_addrs(self, msg, args, targets):
         """List ip addresses of target reggie servers"""
@@ -43,20 +41,17 @@ class Infrastructure(MagbotMixin, FabricMixin, SaltMixin, BotPlugin):
                 ip_addrs[:] = [s for s in ip_addrs if not s.startswith('10.10.')]
         yield results
 
-    @botcmd
     @SaltMixin.cmd(**reggie_target_args)
     def ping(self, msg, args, targets):
         """Ping target reggie servers"""
         yield self.salt_api.local(targets, 'test.ping', expr_form='compound')
 
-    @botcmd
     @SaltMixin.async_cmd('Updating magbot... (takes a few minutes)')
     def update_magbot(self, msg, args, targets):
         """Update magbot"""
         self._update_infrastructure_repo()
         yield self.salt_api.local_async('mcp', 'state.sls', 'docker_magbot')
 
-    @botcmd
     @SaltMixin.async_cmd('Updating mcp... (takes a few minutes)')
     def update_mcp(self, msg, args, targets):
         """Update mcp"""

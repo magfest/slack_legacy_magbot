@@ -5,6 +5,7 @@ from functools import wraps
 
 import pepper
 import yaml
+from errbot import botcmd
 from fabric.connection import Connection
 from fabric.config import Config
 from pepper.libpepper import PepperException
@@ -220,6 +221,7 @@ class SaltMixin(PollerMixin):
         Decorator to format results from the Salt API.
         """
         def decorator(func):
+            @botcmd
             @wraps(func)
             @SaltMixin.parse_target_args(default_targets, grain_args)
             def with_salt_cmd(self, msg, args, targets):
@@ -244,6 +246,7 @@ class SaltMixin(PollerMixin):
         Decorator to poll for asynchronous results from the Salt API.
         """
         def decorator(func):
+            @botcmd
             @wraps(func)
             @SaltMixin.parse_target_args(default_targets, grain_args)
             def with_salt_async_cmd(self, msg, args, targets):
