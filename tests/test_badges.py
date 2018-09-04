@@ -1,7 +1,7 @@
-import magbot.badges  # noqa: F401
+import badges  # noqa: F401
 
 
-extra_plugin_dir = '../magbot'
+extra_plugin_dir = 'plugins'
 
 
 def test_badges(testbot):

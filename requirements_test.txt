@@ -1,4 +1,4 @@
--r magbot/requirements.txt
+-r plugins/requirements.txt
 errbot[slack]>=5.2.0
 pytest>=3.0.1
 coverage>=3.6

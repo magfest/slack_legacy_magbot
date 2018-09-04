@@ -155,7 +155,13 @@ class SaltMixin(PollerMixin):
                     yield self._format_results(results)
 
             return with_salt_cmd
-        return decorator(salutation) if callable(salutation) else decorator
+
+        if callable(salutation):
+            func = salutation
+            salutation = None
+            return decorator(func)
+        else:
+            return decorator
 
     @staticmethod
     def salt_async_cmd(salutation=None, interval=20, times=12):
@@ -184,7 +190,13 @@ class SaltMixin(PollerMixin):
                             kwargs=kwargs)
 
             return with_salt_async_cmd
-        return decorator(salutation) if callable(salutation) else decorator
+
+        if callable(salutation):
+            func = salutation
+            salutation = None
+            return decorator(func)
+        else:
+            return decorator
 
     def __init__(self, *args, **kwargs):
         self.salt_api = None

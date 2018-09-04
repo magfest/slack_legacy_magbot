@@ -1,4 +1,3 @@
-import sys
 from collections import OrderedDict
 from functools import wraps
 
@@ -67,10 +66,6 @@ class Infrastructure(MagbotMixin, FabricMixin, SaltMixin, BotPlugin):
         with self.FabricConnection() as c:
             c.sudo('git -C /srv/infrastructure pull')
             c.sudo('salt-run fileserver.update')
-
-    @botcmd
-    def path(self, msg, args):
-        yield self._format_results({'sys.path': sys.path})
 
     @botcmd(split_args_with=None)
     @parse_reggie_args

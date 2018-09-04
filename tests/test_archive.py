@@ -1,7 +1,7 @@
-import magbot.archive  # noqa: F401
+import archive  # noqa: F401
 
 
-extra_plugin_dir = '../magbot'
+extra_plugin_dir = 'plugins'
 
 
 def test_archive_list_no_channels(testbot, monkeypatch):

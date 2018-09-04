@@ -1,7 +1,7 @@
-import magbot.links  # noqa: F401
+import links  # noqa: F401
 
 
-extra_plugin_dir = '../magbot'
+extra_plugin_dir = 'plugins'
 
 
 def test_remember(testbot):

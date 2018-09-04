@@ -25,7 +25,7 @@ mkdir -p srv
 
 docker run -it --rm \
     --name magbot \
-    --mount type=bind,source=$PWD/magbot,target=/srv/plugins/magbot \
+    --mount type=bind,source=$PWD,target=/srv/plugins/magbot \
     --mount type=bind,source=$PWD/$CONFIG_FILE,target=/srv/config.py \
     --mount type=bind,source=$PWD/srv,target=/srv \
     -e BOT_USERNAME=$BOT_USERNAME \
