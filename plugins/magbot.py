@@ -416,11 +416,12 @@ class SaltMixin(PollerMixin):
             del self._current_jobs[jid]
             missing_minions = sorted(set(minions).difference(job_info['minion_results'].keys()))
 
-            self.send_card(
-                title='No response',
-                body=self._format_results(missing_minions, unwrap_singular_list=False),
-                in_reply_to=msg,
-                color='yellow')
+            if missing_minions:
+                self.send_card(
+                    title='No response',
+                    body=self._format_results(missing_minions, unwrap_singular_list=False),
+                    in_reply_to=msg,
+                    color='yellow')
 
         message = '**Finished job**'
         if jid:
