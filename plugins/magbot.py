@@ -77,16 +77,16 @@ class FabricMixin(object):
 
     def activate(self):
         self.fabric_connection_kwargs = {
-            'host': self.bot_config.SALT_HOST,
-            'user': self.bot_config.SALT_USERNAME,
+            'host': self.bot_config.SSH_HOST,
+            'user': self.bot_config.SSH_USERNAME,
             'config': Config({
                 'sudo': {
-                    'username': self.bot_config.SALT_USERNAME,
-                    'password': self.bot_config.SALT_PASSWORD,
+                    'username': self.bot_config.SSH_USERNAME,
+                    'password': self.bot_config.SSH_PASSWORD,
                 },
             }),
             'connect_kwargs': {
-                'key_filename': '/srv/ssh/{}_id_rsa'.format(self.bot_config.SALT_USERNAME),
+                'key_filename': self.bot_config.SSH_KEY,
             },
         }
         super().activate()
@@ -367,6 +367,8 @@ class SaltMixin(PollerMixin):
             response = self._format_results(new_minion_results)
             if is_first_response:
                 response = '**Results**:{} {}'.format('' if len(minions) == 1 else ' \n', response)
+            if missing_minions:
+                response += ' \n ... _still waiting for more results_'
             self.send(self.message_identifier(msg), response)
 
     def async_cmd_poller_timeout(self, jid, minions, msg, args, **kwargs):
