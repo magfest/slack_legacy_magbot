@@ -51,7 +51,6 @@ SSH_USERNAME = os.environ.get('SSH_USERNAME', 'root')
 SSH_PASSWORD = os.environ.get('SSH_PASSWORD', '')
 SSH_KEY = os.environ.get('SSH_KEY', '/srv/ssh/magbot_id_rsa')
 
-SALT_HOST = os.environ.get('SALT_HOST', 'salt-master.example.com')
 SALT_AUTH = os.environ.get('SALT_AUTH', 'ldap')
 SALT_USERNAME = os.environ.get('SALT_USERNAME', 'username')
 SALT_PASSWORD = os.environ.get('SALT_PASSWORD', 'password')
