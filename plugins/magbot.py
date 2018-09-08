@@ -9,6 +9,7 @@ from errbot import botcmd
 from fabric.connection import Connection
 from fabric.config import Config
 from pepper.libpepper import PepperException
+from pockets import is_listy
 
 
 def gen(func):
@@ -315,10 +316,14 @@ class SaltMixin(PollerMixin):
         results.append('*Changes*: \n```\n{}```'.format(yaml.dump(state.get('changes', {}), default_flow_style=False)))
         return ' \n '.join(results)
 
-    def _format_results(self, results):
+    def _format_results(self, results, unwrap_singular_list=True):
         if isinstance(results, Mapping):
             if results.get('return'):
                 results = results['return']
+
+        while unwrap_singular_list and is_listy(results) and len(results) == 1:
+            results = results[0]
+
         return yaml.dump(results, default_flow_style=False)
 
     def _renew_api_auth(self):
@@ -384,7 +389,7 @@ class SaltMixin(PollerMixin):
         if new_minion_success:
             self.send_card(
                 title='Success',
-                body=self._format_results(sorted(new_minion_success)),
+                body=self._format_results(sorted(new_minion_success), unwrap_singular_list=False),
                 in_reply_to=msg,
                 color='green')
 
@@ -407,6 +412,6 @@ class SaltMixin(PollerMixin):
 
             self.send_card(
                 title='No response',
-                body=self._format_results(missing_minions),
+                body=self._format_results(missing_minions, unwrap_singular_list=False),
                 in_reply_to=msg,
                 color='yellow')
