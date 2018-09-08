@@ -303,13 +303,17 @@ class SaltMixin(PollerMixin):
         return 'No job started, no servers found for {}'.format(' '.join(args))
 
     def _format_failure_state(self, state):
-        state = dict(state, changes=yaml.dump(state['changes'], default_flow_style=False))
-        return \
-            '*ID*: {__id__} \n ' \
-            '*SLS*: {__sls__} \n ' \
-            '*Comment*: {comment} \n ' \
-            '*Changes*: \n'\
-            '```\n{changes}```'.format(**state)
+        results = []
+        if state.get('__id__'):
+            results.append('*ID*: {__id__}'.format(**state))
+        elif state.get('name'):
+            results.append('*Name*: {name}'.format(**state))
+        if state.get('__sls__'):
+            results.append('*SLS*: {__sls__}'.format(**state))
+        if state.get('comment'):
+            results.append('*Comment*: {comment}'.format(**state))
+        results.append('*Changes*: \n```\n{}```'.format(yaml.dump(state.get('changes', {}), default_flow_style=False)))
+        return ' \n '.join(results)
 
     def _format_results(self, results):
         if isinstance(results, Mapping):
@@ -402,7 +406,7 @@ class SaltMixin(PollerMixin):
             missing_minions = sorted(set(minions).difference(job_info['minion_results'].keys()))
 
             self.send_card(
-                title='Never responded',
+                title='No response',
                 body=self._format_results(missing_minions),
                 in_reply_to=msg,
                 color='yellow')

@@ -50,10 +50,10 @@ class Infrastructure(MagbotMixin, FabricMixin, SaltMixin, BotPlugin):
     def update_magbot(self, msg, args, targets):
         """Update magbot"""
         self._update_infrastructure_repo()
-        yield self.salt_api.local_async('mcp', 'state.sls', 'docker_magbot')
+        yield self.salt_api.local_async('mcp.magfest.net', 'state.sls', 'docker_magbot')
 
     @SaltMixin.async_cmd('Updating mcp... (takes a few minutes)')
     def update_mcp(self, msg, args, targets):
         """Update mcp"""
         self._update_infrastructure_repo()
-        yield self.salt_api.local_async('mcp', 'state.apply')
+        yield self.salt_api.local_async('mcp.magfest.net', 'state.apply')
