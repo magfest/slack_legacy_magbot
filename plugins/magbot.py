@@ -1,5 +1,5 @@
 import inspect
-from collections import OrderedDict
+from collections import Mapping, OrderedDict
 from datetime import datetime
 from functools import wraps
 
@@ -298,17 +298,24 @@ class SaltMixin(PollerMixin):
             if len(minions) == 1:
                 message.append('**Target server**: {}'.format(minions[0]))
             elif minions:
-                message.append('**Target servers**: \n {}'.format(' \n '.join(sorted(minions))))
+                message.append('**Target servers**: \n {}'.format(self._format_results(sorted(minions))))
             return ' \n '.join(message)
         return 'No job started, no servers found for {}'.format(' '.join(args))
 
+    def _format_failure_state(self, state):
+        state = dict(state, changes=yaml.dump(state['changes'], default_flow_style=False))
+        return \
+            '*ID*: {__id__} \n ' \
+            '*SLS*: {__sls__} \n ' \
+            '*Comment*: {comment} \n ' \
+            '*Changes*: \n'\
+            '```\n{changes}```'.format(**state)
+
     def _format_results(self, results):
-        result = results.get('return', [])
-        if not result:
-            result = results
-        elif len(result) == 1:
-            result = result[0]
-        return yaml.dump(result, default_flow_style=False)
+        if isinstance(results, Mapping):
+            if results.get('return'):
+                results = results['return']
+        return yaml.dump(results, default_flow_style=False)
 
     def _renew_api_auth(self):
         """
@@ -346,16 +353,23 @@ class SaltMixin(PollerMixin):
         """
         job_info = self._current_jobs[jid]
         job_results = self.salt_api.runner('jobs.lookup_jid', jid=jid, returned=True)
-        is_first_response = not bool(job_info['minion_results'])
         returned_minions = job_results['return'][0]
         missing_minions = set(minions).difference(returned_minions.keys())
 
-        new_minion_results = {}
+        new_minion_success = []
+        new_minion_failure = {}
         for minion, states in returned_minions.items():
             if minion not in job_info['minion_results']:
-                success = all(state['result'] for name, state in states.items())
-                new_minion_results[minion] = 'succeeded' if success else 'failed'
-                job_info['minion_results'][minion] = new_minion_results[minion]
+                failed_states = []
+                for name, state in states.items():
+                    if not state['result']:
+                        failed_states.append(state)
+                if failed_states:
+                    new_minion_failure[minion] = failed_states
+                    job_info['minion_results'][minion] = failed_states
+                else:
+                    new_minion_success.append(minion)
+                    job_info['minion_results'][minion] = True
 
         if missing_minions:
             self._current_jobs[jid] = job_info
@@ -363,13 +377,20 @@ class SaltMixin(PollerMixin):
             self.stop_poller(self.async_cmd_poller, args=[jid, minions, msg, args], kwargs=kwargs)
             del self._current_jobs[jid]
 
-        if new_minion_results:
-            response = self._format_results(new_minion_results)
-            if is_first_response:
-                response = '**Results**:{} {}'.format('' if len(minions) == 1 else ' \n', response)
-            if missing_minions:
-                response += ' \n ... _still waiting for more results_'
-            self.send(self.message_identifier(msg), response)
+        if new_minion_success:
+            self.send_card(
+                title='Success',
+                body=self._format_results(sorted(new_minion_success)),
+                in_reply_to=msg,
+                color='green')
+
+        for minion, results in new_minion_failure.items():
+            failure_text = ' \n\n----\n\n '.join([self._format_failure_state(s) for s in results])
+            self.send_card(
+                title='Failure',
+                body='- {} \n\n\n {}'.format(minion, failure_text),
+                in_reply_to=msg,
+                color='red')
 
     def async_cmd_poller_timeout(self, jid, minions, msg, args, **kwargs):
         """
@@ -378,7 +399,10 @@ class SaltMixin(PollerMixin):
         if jid in self._current_jobs:
             job_info = self._current_jobs[jid]
             del self._current_jobs[jid]
-            missing_minions = set(minions).difference(job_info['minion_results'].keys())
-            if missing_minions:
-                missing_minion_results = {minion: 'never responded' for minion in missing_minions}
-            self.send(self.message_identifier(msg), self._format_results(missing_minion_results))
+            missing_minions = sorted(set(minions).difference(job_info['minion_results'].keys()))
+
+            self.send_card(
+                title='Never responded',
+                body=self._format_results(missing_minions),
+                in_reply_to=msg,
+                color='yellow')
