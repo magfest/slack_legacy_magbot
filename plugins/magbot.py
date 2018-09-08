@@ -242,7 +242,7 @@ class SaltMixin(PollerMixin):
             return decorator
 
     @staticmethod
-    def async_cmd(salutation=None, default_targets=None, grain_args=[], interval=20, times=12):
+    def async_cmd(salutation=None, default_targets=None, grain_args=[], interval=20, times=9):
         """
         Decorator to poll for asynchronous results from the Salt API.
         """
@@ -365,6 +365,9 @@ class SaltMixin(PollerMixin):
         returned_minions = job_results['return'][0]
         missing_minions = set(minions).difference(returned_minions.keys())
 
+        if not missing_minions:
+            self.stop_poller(self.async_cmd_poller, args=[jid, minions, msg, args], kwargs=kwargs)
+
         new_minion_success = []
         new_minion_failure = {}
         for minion, states in returned_minions.items():
@@ -379,12 +382,6 @@ class SaltMixin(PollerMixin):
                 else:
                     new_minion_success.append(minion)
                     job_info['minion_results'][minion] = True
-
-        if missing_minions:
-            self._current_jobs[jid] = job_info
-        else:
-            self.stop_poller(self.async_cmd_poller, args=[jid, minions, msg, args], kwargs=kwargs)
-            del self._current_jobs[jid]
 
         if new_minion_success:
             self.send_card(
@@ -401,9 +398,18 @@ class SaltMixin(PollerMixin):
                 in_reply_to=msg,
                 color='red')
 
+        if not missing_minions:
+            self.finish_async_cmd(jid, minions, msg, args, **kwargs)
+
     def async_cmd_poller_timeout(self, jid, minions, msg, args, **kwargs):
         """
         Called after async_cmd_poller() is called repeatedly and stop_poller() is never called.
+        """
+        self.finish_async_cmd(jid, minions, msg, args, **kwargs)
+
+    def finish_async_cmd(self, jid, minions, msg, args, **kwargs):
+        """
+        Clean up after async cmd.
         """
         if jid in self._current_jobs:
             job_info = self._current_jobs[jid]
@@ -415,3 +421,8 @@ class SaltMixin(PollerMixin):
                 body=self._format_results(missing_minions, unwrap_singular_list=False),
                 in_reply_to=msg,
                 color='yellow')
+
+        message = '**Finished job**'
+        if jid:
+            message += ': {}/molten/job/{}'.format(self.bot_config.SALT_API_URL, jid)
+        self.send(self.message_identifier(msg), message)
