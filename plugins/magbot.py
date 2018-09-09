@@ -385,7 +385,7 @@ class SaltMixin(PollerMixin):
 
         if new_minion_success:
             self.send_card(
-                title='Success',
+                title=':smile: Success',
                 body=self._format_results(sorted(new_minion_success), unwrap_singular_list=False),
                 in_reply_to=msg,
                 color='green')
@@ -393,7 +393,7 @@ class SaltMixin(PollerMixin):
         for minion, results in new_minion_failure.items():
             failure_text = ' \n\n----\n\n '.join([self._format_failure_state(s) for s in results])
             self.send_card(
-                title='Failure',
+                title=':rage: Failure',
                 body='- {} \n\n\n {}'.format(minion, failure_text),
                 in_reply_to=msg,
                 color='red')
@@ -418,7 +418,7 @@ class SaltMixin(PollerMixin):
 
             if missing_minions:
                 self.send_card(
-                    title='No response',
+                    title=':dizzy_face: No response',
                     body=self._format_results(missing_minions, unwrap_singular_list=False),
                     in_reply_to=msg,
                     color='yellow')
