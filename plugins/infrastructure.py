@@ -2,7 +2,7 @@ from errbot import BotPlugin
 from magbot import FabricMixin, MagbotMixin, SaltMixin
 
 
-ENVS = ['prod', 'staging', 'load', 'dev']
+ENVS = ['prod', 'staging', 'load', 'dev', 'onsite']
 EVENT_NAMES = ['super', 'labs', 'stock', 'west']
 
 
